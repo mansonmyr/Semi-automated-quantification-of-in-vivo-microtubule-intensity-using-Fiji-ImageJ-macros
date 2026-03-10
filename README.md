@@ -28,25 +28,7 @@ Results can be exported as CSV tables or copy-paste into your spreadsheet.
 # Analysis Pipeline
 1. Measures centrosomal microtubule intensity.
 
-Z-stack
-   ↓
-Sum projection
-   ↓
-Median filter
-   ↓
-Gaussian blur
-   ↓
-Mean filter
-   ↓
-FindMaxima()
-   ↓
-Save XY coordinates
-   ↓
-Circular ROI placement
-   ↓
-Background subtraction
-   ↓
-Centrosome intensity output
+Z-stack -> Sum projection -> Median filter -> Gaussian blur -> Mean filter -> FindMaxima() -> Save XY coordinates -> Circular ROI placement -> Background subtraction -> Centrosome intensity output
 
 2. Quantifies spindle pole characteristics.
 Measured parameters:
@@ -54,14 +36,6 @@ Measured parameters:
 	•	spindle length (distance between two poles)
 	•	spindle microtubule intensity
 
-Image preprocessing
-   ↓
-Spindle pole detection (FindMaxima)
-   ↓
-Two pole coordinate identification
-   ↓
-Distance calculation
-   ↓
-Rectangular ROI placement along spindle
-   ↓
-Intensity measurement
+Image preprocessing -> Spindle pole detection (FindMaxima)
+   					-> Two pole coordinate identification -> Distance calculation
+   					-> Rectangular ROI placement along spindle -> Intensity measurement
