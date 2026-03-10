@@ -55,6 +55,7 @@ Note: Note: Before clicking ‘OK’, you drag the circle to anywhere of the cen
 
 # Example 2
 Quantification of spindle pole in FIJI
+
 ![ScreenRecording2025-11-22at3 11 23PM-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/c09b96d3-fce1-41ce-96d2-cb694a70f0ee)
 
 # About set Scale ()
@@ -64,6 +65,7 @@ The images taken for this repository utilize the Zeiss Inverted Epifluorescence 
 The circular ROI size was reference to Ali, A., Vineethakumari, C., Lacasa, C., & Lüders, J. (2023). Microtubule nucleation and γTuRC centrosome localization in interphase cells require ch-TOG. Nature communications, 14(1), 289. https://doi.org/10.1038/s41467-023-35955-w
 
 The spindle ROI idea was reference to Walczak, C. E., Zong, H., Jain, S., & Stout, J. R. (2016). Spatial regulation of astral microtubule dynamics by Kif18B in PtK cells. Molecular biology of the cell, 27(20), 3021–3030. https://doi.org/10.1091/mbc.E16-04-0254
+
 <img width="172" height="128" alt="image" src="https://github.com/user-attachments/assets/51da44ed-6df4-42b9-8775-3a64fe6e123f" />
 
 # Citation
