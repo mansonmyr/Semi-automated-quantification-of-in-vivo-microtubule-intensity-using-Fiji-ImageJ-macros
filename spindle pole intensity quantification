@@ -1,0 +1,92 @@
+// ==========================
+// Macro: spindle pole quantification (CentroQuant style)
+// Inner ROI: 1 µm × 1 µm
+// Background ROI: manually drawn same size
+// ==========================
+
+// --- Step 1: Set scale ---
+run("Brightness/Contrast...");
+waitForUser("Adjust Brightness/Contrast", "Please adjust the Brightness/Contrast, then press OK to continue.");
+selectWindow("B&C");
+run("Close");
+run("Set Scale...", "distance=1 known=0.065 unit=µm global");
+showMessage("Scale", "Scale set to 0.065 µm/pixel.");
+
+// --- Step 2: Sum intensity projection with LUT Fire ---
+run("Z Project...", "projection=[Sum Slices]");
+
+// --- Step 3: Duplicate images ---
+run("Set Measurements...", "area integrated redirect=None decimal=3");
+run("Duplicate...", "duplicate title=Original_image");
+run("Duplicate...", "duplicate title=Duplicate_image");
+selectImage("Original_image");
+run("8-bit");
+
+// --- Step 4: Apply filters for maxima detection ---
+selectImage("Duplicate_image");
+run("Adaptive median filter", "radius=5 threshold=5");
+run("Gaussian Blur...", "sigma=2");
+run("Mean...", "radius=2");
+run("Find Maxima...", "prominence=1000 strict exclude output=[Point Selection]");
+waitForUser("Point Confirmation", "Click OK to continue.");
+run("Find Maxima...", "prominence=1000 strict exclude output=List");
+nPoints = nResults;
+
+xCoordinates = newArray(nPoints);
+yCoordinates = newArray(nPoints);
+for (i = 0; i < nPoints; i++) {
+    xCoordinates[i] = getResult("X", i);
+    yCoordinates[i] = getResult("Y", i);
+}
+
+// --- Step 5: Prepare Original_image for measurement ---
+selectImage("Original_image");
+run("Green");
+roiManager("Reset");
+run("Clear Results");
+
+// --- Step 6: Measurement parameters ---
+spindle_inner_diam = 15;   // in pixels
+
+// --- Step 7: Loop through points in pairs (2 poles per spindle) ---
+for (i = 0; i < nPoints; i += 2) {
+    Fspindle_total = 0;
+
+    for (j = 0; j < 2; j++) {
+        idx = i + j;
+        if (idx >= nPoints) break;  // avoid odd number crash
+
+        x = xCoordinates[idx];
+        y = yCoordinates[idx];
+
+        // --- Inner circle (centrosome) ---
+        makeOval(x - spindle_inner_diam/2, y - spindle_inner_diam/2, spindle_inner_diam, spindle_inner_diam);
+        roiManager("Add");
+        roiManager("Select", roiManager("count")-1);
+        roiManager("Rename", "spindle-" + (idx+1));
+        run("Draw");
+        run("Measure");
+        rIndex = nResults - 1;
+        FI = getResult("IntDen", rIndex);
+        AI = getResult("Area", rIndex);
+
+        // --- Background ROI manually drawn ---
+        waitForUser("Background ROI", "Draw a separate background ROI of the same size near the spindle pole " + (idx+1) + " and click OK.");
+        run("Measure");
+        rIndex = nResults - 1;
+        Fbackground = getResult("IntDen", rIndex);
+        Abackground = getResult("Area", rIndex);
+
+        // --- Background correction ---
+        mean_background = Fbackground / Abackground;
+        Fcorrected = FI - mean_background * AI;
+
+        print("Pole " + (idx+1) + " corrected intensity = " + Fcorrected);
+
+        Fspindle_total = Fspindle_total + Fcorrected;
+    }
+
+    // --- Average two poles ---
+    Fspindle = Fspindle_total / 2;
+    print("Spindle " + (i/2+1) + " average corrected intensity = " + Fspindle);
+}
