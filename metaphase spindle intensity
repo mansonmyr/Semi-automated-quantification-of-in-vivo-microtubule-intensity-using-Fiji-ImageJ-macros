@@ -1,0 +1,88 @@
+// ===== Spindle MT Intensity (single ROI + 5 µm × 5 µm background) =====
+// Uses Integrated Density (IntDen) for measurement and background subtraction.
+// Pixel size: 0.065 µm/px (change pxSize if your acquisition differs)
+
+// --- Setup ---
+run("Z Project...", "projection=[Sum Slices]");
+waitForUser("Manual Rotation",
+    "Go to: Image ▸ Transform ▸ Rotate... \n" +
+    "Perform the rotation manually. \n\n" +
+    "Click OK here when finished.");
+run("8-bit");
+
+// Only request the columns we need: area and integrated density
+run("Set Measurements...", "area integrated redirect=None decimal=3");
+roiManager("Reset");
+run("Clear Results");
+
+// --- Image geometry for rough placement ---
+getDimensions(imgW, imgH, ch, zs, fr);
+cx = imgW/2; cy = imgH/2;
+
+// --- ROI sizes (edit measurement ROI if needed) ---
+wS = 55; hS = 130;    // measurement ROI (px)  -- keep or change
+pxSize = 0.065;       // µm per pixel (change if different)
+bg_um = 5.0;          // background side in µm (square)
+bg_px = round(bg_um / pxSize); // side in pixels (rounded)
+wB = bg_px; hB = bg_px;        // background ROI (square in px)
+
+// --- Names ---
+measName = "Spindle-ROI";
+bgName   = "Spindle-BG";
+
+// show computed background size
+//print("Background ROI: " + bg_um + " µm => " + bg_px + " px (square)");
+
+// -------- Measurement ROI (single) --------
+makeRectangle(cx - wS/2, cy - hS/2, wS, hS); // initial placement (centered)
+roiManager("Add");
+roiManager("Select", roiManager("count")-1);
+roiManager("Rename", measName);
+waitForUser("Place measurement ROI", "Move/position the measurement box over the spindle, then click OK.");
+
+// ensure the ROI is active on canvas then measure
+roiManager("Select", roiManager("count")-1);
+run("Measure");
+rMeas = nResults-1;
+intDenMeas = getResult("IntDen", rMeas);
+areaMeas = getResult("Area", rMeas);
+print(measName + " IntDen = " + intDenMeas + "  Area = " + areaMeas);
+
+// -------- Background ROI (5 µm square) --------
+// Get measurement ROI bounds to place a placeholder nearby
+roiManager("Select", roiManager("count")-1);
+getSelectionBounds(mx,my,mw,mh);
+
+// attempt to put placeholder to the right of measurement ROI (offset 20 px)
+bx = mx + mw + 20;
+by = my;
+
+// if it would go outside the image, place it to the left instead
+if (bx + wB > imgW) bx = mx - 20 - wB;
+if (bx < 0) bx = 0;
+if (by + hB > imgH) by = imgH - hB;
+if (by < 0) by = 0;
+
+makeRectangle(bx, by, wB, hB);
+roiManager("Add");
+roiManager("Select", roiManager("count")-1);
+roiManager("Rename", bgName);
+waitForUser("Place background ROI", "Move this small " + bg_um + " µm × " + bg_um + " µm box to a nearby MT-free region if needed, then click OK.");
+
+// ensure the background ROI is active on canvas then measure
+roiManager("Select", roiManager("count")-1);
+run("Measure");
+rBG = nResults-1;
+intDenBG = getResult("IntDen", rBG);
+areaBG = getResult("Area", rBG);
+print(bgName + " IntDen = " + intDenBG + "  Area = " + areaBG);
+
+// -------- Corrected integrated density & summary --------
+if (areaBG <= 0) {
+    print("ERROR: background ROI area is zero or invalid.");
+} else {
+    meanBG_perpx = intDenBG / areaBG; // background integrated per-pixel (derived from IntDen)
+    correctedIntDen = intDenMeas - (meanBG_perpx * areaMeas);
+    print("Background per-pixel (from IntDen_bg / Area_bg) = " + meanBG_perpx);
+    print("Corrected Integrated Density = " + correctedIntDen);
+}
