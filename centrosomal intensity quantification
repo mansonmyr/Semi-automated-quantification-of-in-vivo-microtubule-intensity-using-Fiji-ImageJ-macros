@@ -1,0 +1,78 @@
+// ==========================
+// Macro: α-tubulin centrosome quantification (CentroQuant)
+// Inner ROI: 4 µm × 4 µm
+// Background ROI: manually drawn same size
+// ==========================
+
+// --- Step 1: Set scale ---
+run("Set Scale...", "distance=1 known=0.065 unit=µm global");
+showMessage("Scale", "Scale set to 0.065 µm/pixel.");
+
+// --- Step 2: Sum intensity projection ---
+waitForUser("Projection Confirmation", "Press OK to create Sum Intensity Projection.");
+run("Z Project...", "projection=[Sum Slices]");
+
+// --- Step 3: Duplicate images ---
+run("Duplicate...", "duplicate title=Original_image");
+run("Duplicate...", "duplicate title=Duplicate_image");
+selectImage("Original_image");
+run("8-bit");
+
+// --- Step 4: Apply filters for maxima detection ---
+selectImage("Duplicate_image");
+run("Adaptive median filter", "radius=5 threshold=5");
+run("Gaussian Blur...", "sigma=2");
+run("Mean...", "radius=2");
+
+// --- Step 5: Identify points with Find Maxima ---
+run("Find Maxima...", "prominence=12000 strict exclude output=[Point Selection]");
+waitForUser("Point Confirmation", "Click OK to continue.");
+
+// --- Step 6: Save coordinates to arrays ---
+run("Find Maxima...", "prominence=12000 strict exclude output=List");
+nPoints = nResults;
+
+xCoordinates = newArray(nPoints);
+yCoordinates = newArray(nPoints);
+for (i = 0; i < nPoints; i++) {
+    xCoordinates[i] = getResult("X", i);
+    yCoordinates[i] = getResult("Y", i);
+}
+
+// --- Step 7: Prepare Original_image for measurement ---
+selectImage("Original_image");
+roiManager("Reset");
+run("Clear Results");
+
+// --- Step 8: Measurement parameters ---
+alpha_inner_diam = 62;   // 4 µm / 0.065 µm/pixel
+
+// --- Step 9: Loop through each point ---
+for (i = 0; i < nPoints; i++) {
+    x = xCoordinates[i];
+    y = yCoordinates[i];
+
+    // --- Inner circle (centrosome) ---
+    makeOval(x - alpha_inner_diam/2, y - alpha_inner_diam/2, alpha_inner_diam, alpha_inner_diam);
+    roiManager("Add");
+    roiManager("Select", roiManager("count")-1);
+    roiManager("Rename", "α-inner-" + (i+1));
+    run("Draw");
+    run("Measure");
+    rIndex = nResults - 1;
+    FI = getResult("IntDen", rIndex);
+    AI = getResult("Area", rIndex);
+
+    // --- Background ROI manually drawn ---
+    waitForUser("Background ROI", "Draw a separate background ROI of the same size near the centrosome for point " + (i+1) + " and click OK.");
+    run("Measure");
+    rIndex = nResults - 1;
+    Fbackground = getResult("IntDen", rIndex);
+    Abackground = getResult("Area", rIndex);
+
+    // --- Background correction ---
+    mean_background = Fbackground / Abackground;
+    Fcentrosome = FI - mean_background * AI;
+
+    print("Point " + (i+1) + " (α-tubulin, background-corrected) = " + Fcentrosome);
+}
