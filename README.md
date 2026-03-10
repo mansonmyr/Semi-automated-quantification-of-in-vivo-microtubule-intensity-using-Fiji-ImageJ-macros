@@ -67,13 +67,5 @@ The spindle ROI idea was reference to Walczak, C. E., Zong, H., Jain, S., & Stou
 <img width="172" height="128" alt="image" src="https://github.com/user-attachments/assets/51da44ed-6df4-42b9-8775-3a64fe6e123f" />
 
 # Citation
-cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-authors:
-- family-names: "Ooi"
-  given-names: "Kai Hong"
-  orcid: "https://orcid.org/0000-0003-3803-7864"
-title: "Semi-automated-quantification-of-in-vivo-microtubule-intensity-using-Fiji-ImageJ-macros"
-version: 1.0.0
-date-released: 2026-03-10
-url: "https://github.com/mansonmyr/Semi-automated-quantification-of-in-vivo-microtubule-intensity-using-Fiji-ImageJ-macros"
+If you use this software, please cite it as below.
+Kai Hong, Ooi. (2026). Semi-automated-quantification-of-in-vivo-microtubule-intensity-using-Fiji-ImageJ-macros. version: 1.0.0. date-released: 2026-03-10. url: "https://github.com/mansonmyr/Semi-automated-quantification-of-in-vivo-microtubule-intensity-using-Fiji-ImageJ-macros"
