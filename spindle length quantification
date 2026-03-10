@@ -1,0 +1,55 @@
+// ==========================
+// Macro: spindle pole distance quantification (CentroQuant style)
+// Inner ROI: 1 µm × 1 µm
+// Background ROI: manually drawn same size
+// ==========================
+// --- Step 1: Detect spindle poles ---
+run("Set Measurements...", "area integrated redirect=None decimal=3");
+run("Z Project...", "projection=[Sum Slices]");
+run("Duplicate...", "duplicate title=Original_image");
+run("Duplicate...", "duplicate title=Duplicate_image");
+selectImage("Original_image");
+run("8-bit");
+selectImage("Duplicate_image");
+run("Adaptive median filter", "radius=5 threshold=5");
+run("Gaussian Blur...", "sigma=2");
+run("Mean...", "radius=2");
+run("Find Maxima...", "prominence=1000 strict exclude output=[Point Selection]");
+waitForUser("Point Confirmation", "Click OK to continue.");
+run("Find Maxima...", "prominence=1000 strict exclude output=List");
+nPoints = nResults;
+
+// --- Step 2: Store coordinates ---
+xCoordinates = newArray(nPoints);
+yCoordinates = newArray(nPoints);
+for (i = 0; i < nPoints; i++) {
+    xCoordinates[i] = getResult("X", i);
+    yCoordinates[i] = getResult("Y", i);
+}
+
+// --- Step 3: Measure distance between pole pairs ---
+for (i = 0; i < nPoints; i += 2) {
+    if (i + 1 >= nPoints) break; // avoid crash if odd number of points
+
+    x1 = xCoordinates[i];
+    y1 = yCoordinates[i];
+    x2 = xCoordinates[i+1];
+    y2 = yCoordinates[i+1];
+
+    // Euclidean distance
+    dx = x2 - x1;
+    dy = y2 - y1;
+    distance_pixels = sqrt(dx*dx + dy*dy);
+
+    // Convert to µm if pixel size is known (example: 0.065 µm/pixel)
+    pixel_size = 0.065;  
+    distance_um = distance_pixels * pixel_size;
+
+    print("Spindle " + (i/2+1) + " pole-to-pole distance = " + distance_um + " µm");
+
+// --- Step 4: Draw line between poles ---
+    selectImage("Original_image");
+    run("Green");
+    makeLine(x1, y1, x2, y2);
+    //run("Draw");   // <-- uncomment if you want the line burned into the image
+}
