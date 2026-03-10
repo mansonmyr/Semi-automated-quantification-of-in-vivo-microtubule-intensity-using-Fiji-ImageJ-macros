@@ -1,0 +1,88 @@
+// ===== Astral / Cortical MT Intensity =====
+// Pixel size: 0.065 µm/px (set scale beforehand if needed)
+// ROI size: 30 x 150 px (≈20 µm² each); 4 boxes total
+// Workflow: Z-Project -> manual Rotate dialog -> per-ROI background subtraction
+
+// --- Setup ---
+run("Z Project...", "projection=[Sum Slices]");
+waitForUser("Manual Rotation",
+    "Go to: Image ▸ Transform ▸ Rotate... \n" +
+    "Perform the rotation manually. \n\n" +
+    "Click OK here when finished."); // opens the dialog; set your angle manually, click OK
+run("Set Measurements...", "mean area integrated redirect=None decimal=3");
+roiManager("Reset");
+run("Clear Results");
+
+// --- Image geometry for rough placement ---
+getDimensions(imgW, imgH, ch, zs, fr);
+cx = imgW/2; cy = imgH/2;
+
+// --- Fixed ROI size (astral/cortical) ---
+wA = 10; hA = 50;
+
+// Arrays to store corrected means
+aNames = newArray("Astral-Left","Astral-Right","Astral-Above","Astral-Below");
+corrMeans = newArray(4);
+
+// -------- ROI 1: Left of spindle --------
+makeRectangle(100, 100, 50, 100); // initial placement
+roiManager("Add");              // add to ROI Manager
+roiManager("Select", roiManager("count")-1); // select the last one
+waitForUser("Adjust ROI", "Move this box to the correct position, then click OK.");
+run("Measure"); r1 = nResults-1; mean1 = getResult("Mean", r1);
+
+// Background for ROI 1 (same size)
+getSelectionBounds(x,y,w,h);
+makeRectangle(x + 50, y + 50, w, h); // placeholder nearby
+roiManager("Add"); roiManager("Rename", aNames[0]+"-bg");
+waitForUser("Background for '"+aNames[0]+"'", "Drag background ROI (same size) to MT-free area. Click OK.");
+run("Measure"); rbg = nResults-1; meanBG = getResult("Mean", rbg);
+corrMeans[0] = mean1 - meanBG;
+print(aNames[0]+" corrected mean = " + corrMeans[0]);
+
+// -------- ROI 2: Right of spindle --------
+makeRectangle(cx + 200 - wA/2, cy - hA/2, wA, hA);
+roiManager("Add"); roiManager("Rename", aNames[1]);
+waitForUser("Position '"+aNames[1]+"'", "Drag ROI to the RIGHT cortical region, then click OK.");
+run("Measure"); r1 = nResults-1; mean1 = getResult("Mean", r1);
+
+getSelectionBounds(x,y,w,h);
+makeRectangle(x + 50, y + 50, w, h);
+roiManager("Add"); roiManager("Rename", aNames[1]+"-bg");
+waitForUser("Background for '"+aNames[1]+"'", "Drag background ROI (same size) to MT-free area. Click OK.");
+run("Measure"); rbg = nResults-1; meanBG = getResult("Mean", rbg);
+corrMeans[1] = mean1 - meanBG;
+print(aNames[1]+" corrected mean = " + corrMeans[1]);
+
+// -------- ROI 3: Above spindle --------
+makeRectangle(cx - wA/2, cy - 200 - hA/2, wA, hA);
+roiManager("Add"); roiManager("Rename", aNames[2]);
+waitForUser("Position '"+aNames[2]+"'", "Drag ROI ABOVE the spindle, then click OK.");
+run("Measure"); r1 = nResults-1; mean1 = getResult("Mean", r1);
+
+getSelectionBounds(x,y,w,h);
+makeRectangle(x + 50, y + 50, w, h);
+roiManager("Add"); roiManager("Rename", aNames[2]+"-bg");
+waitForUser("Background for '"+aNames[2]+"'", "Drag background ROI (same size) to MT-free area. Click OK.");
+run("Measure"); rbg = nResults-1; meanBG = getResult("Mean", rbg);
+corrMeans[2] = mean1 - meanBG;
+print(aNames[2]+" corrected mean = " + corrMeans[2]);
+
+// -------- ROI 4: Below spindle --------
+makeRectangle(cx - wA/2, cy + 200 - hA/2, wA, hA);
+roiManager("Add"); roiManager("Rename", aNames[3]);
+waitForUser("Position '"+aNames[3]+"'", "Drag ROI BELOW the spindle, then click OK.");
+run("Measure"); r1 = nResults-1; mean1 = getResult("Mean", r1);
+
+getSelectionBounds(x,y,w,h);
+makeRectangle(x + 50, y + 50, w, h);
+roiManager("Add"); roiManager("Rename", aNames[3]+"-bg");
+waitForUser("Background for '"+aNames[3]+"'", "Drag background ROI (same size) to MT-free area. Click OK.");
+run("Measure"); rbg = nResults-1; meanBG = getResult("Mean", rbg);
+corrMeans[3] = mean1 - meanBG;
+print(aNames[3]+" corrected mean = " + corrMeans[3]);
+
+// --- Summary (average of 4 corrected means; areas identical) ---
+sum=0; for(i=0;i<4;i++) sum+=corrMeans[i];
+avg = sum/4.0;
+print("Astral/Cortical MT corrected mean (avg of 4) = " + avg);
